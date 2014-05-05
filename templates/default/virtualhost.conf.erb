@@ -1,0 +1,73 @@
+<VirtualHost *:80>
+  ServerName <%= @params[:server_name] %>
+  ServerAlias <% @params[:server_aliases].each do |a| %><%= "#{a}" %> <% end %>
+  DocumentRoot <%= @params[:docroot] %>
+  <% if @params[:server_include] %>
+    <% @params[:server_include].each do |b| %>Include <%= "#{b}" %>
+    <% end %>
+  <% end %>
+
+  <Directory <%= @params[:docroot] %>>
+    Options FollowSymLinks
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+  </Directory>
+
+  <Location /server-status>
+    SetHandler server-status
+    Order deny,allow
+    Deny from all
+    Allow from localhost <%= @params[:internal_ips].join(' ') %>
+  </Location>
+
+  LogLevel info
+  ErrorLog <%= node[:apache][:log_dir] %>/<%= @params[:host] %>.error_log
+  CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:host] %>.access_log combined
+
+  RewriteEngine On
+  RewriteLog <%= node[:apache][:log_dir] %>/<%= @params[:host] %>.rewrite_log
+  # level 0 => Do not log rewrite
+  RewriteLogLevel 0
+</VirtualHost>
+
+<% if @params[:https_enabled] %>
+<IfModule mod_ssl.c>
+<VirtualHost *:443>
+  ServerName <%= @params[:server_name] %>
+  ServerAlias <% @params[:server_aliases].each do |a| %><%= a %> <% end %>
+  DocumentRoot <%= @params[:docroot] %>
+  <% if @params[:server_include] %>
+  <% @params[:server_include].each do |b| %>Include <%= b %>
+  <% end %>
+  <% end %>
+
+  <Directory <%= @params[:docroot] %>>
+    Options FollowSymLinks
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+  </Directory>
+
+  <Location /server-status>
+    SetHandler server-status
+    Order deny,allow
+    Deny from all
+    Allow from localhost <%= @params[:internal_ips].join(' ') %>
+  </Location>
+
+  LogLevel info
+  ErrorLog <%= node[:apache][:log_dir] %>/<%= @params[:host] %>.error_log
+  CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:host] %>.access_log combined
+
+  RewriteEngine On
+  RewriteLog <%= node[:apache][:log_dir] %>/<%= @params[:host] %>.rewrite_log
+  # level 0 => Do not log rewrite
+  RewriteLogLevel 0
+
+  SSLEngine on
+  SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem
+  SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+</VirtualHost>
+</IfModule>
+<% end %>
